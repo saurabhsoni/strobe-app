@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Strobe Light</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        #strobe {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #000;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group label {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .type-btn {
+            background: #333;
+            color: white;
+        }
+
+        .type-btn.active {
+            background: white;
+            color: black;
+        }
+
+        .speed-btn {
+            background: #444;
+            color: white;
+        }
+
+        .speed-btn.active {
+            background: #00ff88;
+            color: black;
+        }
+
+        #start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        #start-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            #controls {
+                width: 90%;
+                padding: 15px;
+            }
+
+            button {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="strobe"></div>
+    
+    <div id="controls">
+        <div class="control-group">
+            <label>Strobe Type</label>
+            <div class="button-group">
+                <button class="type-btn active" data-type="bw">Black & White</button>
+                <button class="type-btn" data-type="colorful">Colorful</button>
+                <button class="type-btn" data-type="police">Police</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Frequency</label>
+            <div class="button-group">
+                <button class="speed-btn" data-speed="100">Fast (0.1s)</button>
+                <button class="speed-btn active" data-speed="500">Med (0.5s)</button>
+                <button class="speed-btn" data-speed="1000">Slow (1s)</button>
+            </div>
+        </div>
+
+        <button id="start-btn">START STROBE</button>
+    </div>
+
+    <script>
+        const strobe = document.getElementById('strobe');
+        const controls = document.getElementById('controls');
+        const startBtn = document.getElementById('start-btn');
+        const typeBtns = document.querySelectorAll('.type-btn');
+        const speedBtns = document.querySelectorAll('.speed-btn');
+
+        let strobeInterval = null;
+        let currentType = 'bw';
+        let currentSpeed = 500;
+        let isRunning = false;
+        let currentColor = 0;
+
+        // Strobe type configurations
+        const strobeTypes = {
+            bw: {
+                colors: ['#FFFFFF', '#000000'],
+                name: 'Black & White'
+            },
+            colorful: {
+                colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'],
+                name: 'Colorful'
+            },
+            police: {
+                colors: ['#FF0000', '#0000FF'],
+                name: 'Police'
+            }
+        };
+
+        // Type button handlers
+        typeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                typeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentType = btn.dataset.type;
+                currentColor = 0; // Reset color index
+            });
+        });
+
+        // Speed button handlers
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSpeed = parseInt(btn.dataset.speed);
+                
+                // Restart strobe with new speed if running
+                if (isRunning) {
+                    stopStrobe();
+                    startStrobe();
+                }
+            });
+        });
+
+        // Strobe function
+        function strobeFlash() {
+            const colors = strobeTypes[currentType].colors;
+            strobe.style.background = colors[currentColor];
+            currentColor = (currentColor + 1) % colors.length;
+        }
+
+        function startStrobe() {
+            isRunning = true;
+            startBtn.textContent = 'STOP STROBE';
+            startBtn.classList.add('active');
+            controls.classList.add('hidden');
+            
+            // Initial flash
+            strobeFlash();
+            
+            // Start interval
+            strobeInterval = setInterval(strobeFlash, currentSpeed);
+        }
+
+        function stopStrobe() {
+            isRunning = false;
+            startBtn.textContent = 'START STROBE';
+            startBtn.classList.remove('active');
+            controls.classList.remove('hidden');
+            
+            if (strobeInterval) {
+                clearInterval(strobeInterval);
+                strobeInterval = null;
+            }
+            
+            strobe.style.background = '#000';
+            currentColor = 0;
+        }
+
+        // Start/Stop button
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isRunning) {
+                stopStrobe();
+            } else {
+                startStrobe();
+            }
+        });
+
+        // Tap screen to toggle controls when running
+        strobe.addEventListener('click', (e) => {
+            if (isRunning) {
+                if (controls.classList.contains('hidden')) {
+                    controls.classList.remove('hidden');
+                } else {
+                    controls.classList.add('hidden');
+                }
+            }
+        });
+
+        // Prevent double-tap zoom on mobile
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Request fullscreen on mobile
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen().catch(() => {});
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "strobe-app",
+  "version": "1.0.0",
+  "description": "Full-screen strobe light web app",
+  "scripts": {
+    "dev": "python3 -m http.server 3001",
+    "start": "python3 -m http.server 8080"
+  }
+}

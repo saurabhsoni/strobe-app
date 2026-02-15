@@ -42,6 +42,13 @@
             gap: 15px;
             z-index: 1000;
             backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
         }
 
         .control-group {
@@ -111,8 +118,22 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        .hidden {
-            display: none;
+        #swipe-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #swipe-hint.show {
+            opacity: 1;
         }
 
         @media (max-width: 600px) {
@@ -130,6 +151,8 @@
 </head>
 <body>
     <div id="strobe"></div>
+    
+    <div id="swipe-hint">Swipe ↑ for controls</div>
     
     <div id="controls">
         <div class="control-group">
@@ -156,6 +179,7 @@
     <script>
         const strobe = document.getElementById('strobe');
         const controls = document.getElementById('controls');
+        const swipeHint = document.getElementById('swipe-hint');
         const startBtn = document.getElementById('start-btn');
         const typeBtns = document.querySelectorAll('.type-btn');
         const speedBtns = document.querySelectorAll('.speed-btn');
@@ -220,6 +244,12 @@
             startBtn.classList.add('active');
             controls.classList.add('hidden');
             
+            // Show swipe hint briefly
+            swipeHint.classList.add('show');
+            setTimeout(() => {
+                swipeHint.classList.remove('show');
+            }, 3000);
+            
             // Initial flash
             strobeFlash();
             
@@ -255,21 +285,40 @@
         // Swipe gestures for controls
         let touchStartY = 0;
         let touchEndY = 0;
+        let touchStartTime = 0;
         const swipeThreshold = 50; // minimum swipe distance in pixels
+        const maxSwipeTime = 500; // max time for a swipe (ms)
 
-        strobe.addEventListener('touchstart', (e) => {
+        document.addEventListener('touchstart', (e) => {
+            // Don't interfere with control buttons
+            if (e.target.closest('#controls')) {
+                return;
+            }
             touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
         }, { passive: true });
 
-        strobe.addEventListener('touchend', (e) => {
+        document.addEventListener('touchend', (e) => {
+            // Don't interfere with control buttons
+            if (e.target.closest('#controls')) {
+                return;
+            }
+            
+            if (!isRunning) return;
+            
             touchEndY = e.changedTouches[0].clientY;
-            handleSwipe();
+            const touchDuration = Date.now() - touchStartTime;
+            
+            // Only register as swipe if it was quick enough
+            if (touchDuration < maxSwipeTime) {
+                handleSwipe();
+            }
         }, { passive: true });
 
         function handleSwipe() {
             const swipeDistance = touchStartY - touchEndY;
             
-            if (Math.abs(swipeDistance) > swipeThreshold && isRunning) {
+            if (Math.abs(swipeDistance) > swipeThreshold) {
                 if (swipeDistance > 0) {
                     // Swipe up - show controls
                     controls.classList.remove('hidden');

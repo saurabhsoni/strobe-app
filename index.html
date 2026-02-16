@@ -120,16 +120,19 @@
 
         #swipe-hint {
             position: fixed;
-            top: 50%;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 18px;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
             text-align: center;
             pointer-events: none;
             z-index: 999;
             opacity: 0;
             transition: opacity 0.3s ease;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
         }
 
         #swipe-hint.show {
@@ -152,7 +155,7 @@
 <body>
     <div id="strobe"></div>
     
-    <div id="swipe-hint">Swipe ↑ for controls</div>
+    <div id="swipe-hint">Swipe ↓ to hide</div>
     
     <div id="controls">
         <div class="control-group">
@@ -245,6 +248,7 @@
             controls.classList.add('hidden');
             
             // Show swipe hint briefly
+            swipeHint.textContent = 'Swipe ↑ for controls';
             swipeHint.classList.add('show');
             setTimeout(() => {
                 swipeHint.classList.remove('show');
@@ -304,8 +308,6 @@
                 return;
             }
             
-            if (!isRunning) return;
-            
             touchEndY = e.changedTouches[0].clientY;
             const touchDuration = Date.now() - touchStartTime;
             
@@ -322,9 +324,19 @@
                 if (swipeDistance > 0) {
                     // Swipe up - show controls
                     controls.classList.remove('hidden');
+                    swipeHint.textContent = 'Swipe ↓ to hide';
+                    swipeHint.classList.add('show');
+                    setTimeout(() => {
+                        swipeHint.classList.remove('show');
+                    }, 2000);
                 } else {
                     // Swipe down - hide controls
                     controls.classList.add('hidden');
+                    swipeHint.textContent = 'Swipe ↑ for controls';
+                    swipeHint.classList.add('show');
+                    setTimeout(() => {
+                        swipeHint.classList.remove('show');
+                    }, 2000);
                 }
             }
         }
